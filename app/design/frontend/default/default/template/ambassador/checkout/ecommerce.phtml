@@ -16,6 +16,11 @@ $lastId   = $checkout->getLastOrderId();
 if ($lastId) {
 	$order = Mage::getModel('sales/order');
 	$order->load($lastId);
+	$revenue = $order->getSubtotal()+$order->getDiscountAmount();
+	$transaction_id = $order->getRealOrderId();
+} else {
+	$revenue = 0;
+	$transaction_id = false;
 }
 
 if (!empty($order)) {
@@ -35,17 +40,22 @@ if (!empty($order)) {
 	var mbsy_campaign_uid='<?php echo $campaign ?>'; // Required
 	var mbsy_email='<?php echo $email ?>'; // Required - replace with your new customer's email
 	// Put additional optional variables here
-	var mbsy_revenue='0'; // Required
-	var mbsy_has_trial=1; // Required
+	var mbsy_revenue='<?php echo $revenue ?>'; // Required
 	var mbsy_first_name='<?php echo $first_name ?>';
 	var mbsy_last_name='<?php echo $last_name ?>';
+	<?php if (in_array($mbsy_is_approved, array('1', '0'))) { ?>
+	var mbsy_is_approved='<?php echo $mbsy_is_approved ?>';
+	<?php } ?>
+	<?php if ($transaction_id) { ?>
+	var mbsy_transaction_uid = '<?php echo $transaction_id ?>';
+	<?php } ?>
 	var addthis_config = {
-	   data_track_clickback: false
+		data_track_clickback: false
 	}
 	var addthis_share = {
-	  templates : {
-	   twitter : "{{title}} {{url}} (via @GetAmbassador)"
-	  }
+		templates : {
+			twitter : "{{title}} {{url}} (via @GetAmbassador)"
+		}
 	}
 </script>
 <script type="text/javascript" src="<?php echo $mbsy_url ?>v3/ecommerce/js/<?php echo $username ?>"></script>

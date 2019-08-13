@@ -23,77 +23,67 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 	}
 
 	/**
-	 * Calls event/record API method
+	 * Calls commission/update API method
 	 *
 	 * @param   Varien_Event_Observer $observer
 	 * @return  Ambassador_Event
 	 */
-	public function callEventRecord($observer)
+	public function callCommissionUpdate($observer)
 	{
 		$snippet_type = Mage::getModel('core/variable')->loadByCode('getambassador_snippet_type')->getValue('plain');
-		$campaign_uid = Mage::getModel('core/variable')->loadByCode('getambassador_active_campaign')->getValue('plain');
 		$username = Mage::getModel('core/variable')->loadByCode('getambassador_username')->getValue('plain');
 		$api_key = Mage::getModel('core/variable')->loadByCode('getambassador_api_key')->getValue('plain');
 		$mode = Mage::getModel('core/variable')->loadByCode('getambassador_mode')->getValue('plain');
 
-		if (empty($username) || empty($api_key) || empty($campaign_uid) || $campaign_uid == 'disabled') {
+		if (empty($username) || empty($api_key)) {
 			return $this;
 		}
 
-		$campaigns = explode(',', $campaign_uid);
+		switch ($observer->getEvent()->getName()) {
 
-		$order = $observer->getEvent()->getInvoice()->getOrder();
-
-		$revenue = $order->getSubtotal()+$order->getDiscountAmount();
-		$email = $order->getCustomerEmail();
-		$first_name = $order->getCustomerFirstname();
-		$last_name = $order->getCustomerLastname();
-		$uid = $order->getCustomerId();
-		$transaction_uid = $order->getRealOrderId();
-		$ip_address = $order->getRemoteIp();
-
-		$api_url = $this->ambassador_url."api/v2/$username/$api_key/json/event/record";
-
-		foreach ($campaigns as $i => $campaign) {
-
-			if ($i > 0) {
-				$transaction_uid = '';
-			}
-
-			// Data for API call
-			$data = array(
-				'campaign_uid' => $campaign,
-				'email' => $email,
-				'revenue' => $revenue,
-				'transaction_uid' => $transaction_uid,
-				'first_name' => $first_name,
-				'last_name' => $last_name
-			);
-
-			if ($mode != 'dev') {
-				$data['ip_address'] = $ip_address;
-			}
-
-			$data = http_build_query($data);
-
-			// Call to API via CURL
-			$curl_handle = curl_init();
-			curl_setopt($curl_handle, CURLOPT_URL, $api_url);
-			curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 10);
-			curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($curl_handle, CURLOPT_POST, 1);
-			curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $data);
-			$buffer = curl_exec($curl_handle);
-			curl_close($curl_handle);
-			// Output
-			$returnData = json_decode($buffer, true);
+			case 'sales_order_invoice_pay':
+				$order = $observer->getEvent()->getInvoice()->getOrder();
+				$is_approved = 1;
+				break;
+			case 'sales_order_shipment_save_after':
+				$order = $observer->getEvent()->getShipment()->getOrder();
+				$is_approved = 1;
+				break;
+			case 'order_cancel_after':
+				$order = $observer->getEvent()->getOrder();
+				$is_approved = 2;
+				break;
 		}
+
+		$transaction_uid = $order->getRealOrderId();
+
+		$api_url = $this->ambassador_url."api/v2/$username/$api_key/json/commission/update";
+
+		// Data for API call
+		$data = array(
+			'transaction_uid' => $transaction_uid,
+			'is_approved' => $is_approved
+		);
+
+		$data = http_build_query($data);
+
+		// Call to API via CURL
+		$curl_handle = curl_init();
+		curl_setopt($curl_handle, CURLOPT_URL, $api_url);
+		curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 10);
+		curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($curl_handle, CURLOPT_POST, 1);
+		curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $data);
+		$buffer = curl_exec($curl_handle);
+		curl_close($curl_handle);
+		// Output
+		$returnData = json_decode($buffer, true);
 
 		return $this;
 	}
 
 	/**
-	 * Adds initial code snippet to record initial event
+	 * Adds initial code snippet to record commission
 	 *
 	 * @param   Varien_Event_Observer $observer
 	 * @return  Ambassador_Event
@@ -104,6 +94,11 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 		$campaign_uid = Mage::getModel('core/variable')->loadByCode('getambassador_active_campaign')->getValue('plain');
 		$username     = Mage::getModel('core/variable')->loadByCode('getambassador_username')->getValue('plain');
 		$api_key      = Mage::getModel('core/variable')->loadByCode('getambassador_api_key')->getValue('plain');
+		$is_approved  = Mage::getModel('core/variable')->loadByCode('getambassador_is_approved')->getValue('plain');
+
+		if (is_null($is_approved)) {
+			$is_approved = $this->addMissingCustomVariable('getambassador_is_approved');
+		}
 
 		if (empty($username) || empty($api_key) || empty($campaign_uid) || $campaign_uid == 'disabled') {
 			return $this;
@@ -123,6 +118,8 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 			'ambassador_img',
 			array('template' => "ambassador/checkout/$template.phtml")
 		);
+
+		$block->assign('mbsy_is_approved', $is_approved);
 
 		Mage::app()->getLayout()->getBlock('content')->append($block);
 
@@ -204,6 +201,39 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 		}
 
 		return $this;
+	}
+
+	public function addMissingCustomVariable($name)
+	{
+		switch ($name) {
+
+			case 'getambassador_is_approved':
+
+				$variable = Mage::getModel('core/variable')->loadByCode('getambassador_is_approved');
+				$variableData = $variable->getData();
+
+				if (empty($variableData)) {
+
+					$variable->cleanModelCache();
+					$variable = Mage::getModel('core/variable');
+
+					$variable_data = array(
+						'code' => 'getambassador_is_approved',
+						'name' => 'getambassador Approve commission while placing order',
+						'plain_value' => '0',
+						'html_value' => ''
+						);
+
+					$variable->setData($variable_data);
+				}
+
+				try {
+					$variable->save();
+				} catch (Exception $e) {}
+
+				return $variable_data['plain_value'];
+				break;
+		}
 	}
 }
 
