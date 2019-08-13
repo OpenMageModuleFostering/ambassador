@@ -196,6 +196,9 @@ class Ambassador_Event_CallbackController extends Mage_Core_Controller_Front_Act
 					);
 
 				$variable->setData($variable_data);
+			} else {
+
+				$variable->setData('plain_value', $mode);
 			}
 
 			try {

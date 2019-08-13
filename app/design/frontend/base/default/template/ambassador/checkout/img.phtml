@@ -1,0 +1,54 @@
+<?php
+
+$username = Mage::getModel('core/variable')->loadByCode('getambassador_username')->getValue('plain');
+$campaign = Mage::getModel('core/variable')->loadByCode('getambassador_active_campaign')->getValue('plain');
+$mode = Mage::getModel('core/variable')->loadByCode('getambassador_mode')->getValue('plain');
+$auto_create_amb = Mage::getModel('core/variable')->loadByCode('getambassador_auto_create_ambassador')->getValue('plain');
+
+if (intval($auto_create_amb) == 1) {
+	$auto_create = '&mbsy_auto_create=1';
+} elseif(intval($auto_create_amb) == 0) {
+	$auto_create = '&mbsy_auto_create=0';
+} else {
+	$auto_create = '';
+}
+
+if ($mode === 'dev') {
+	$mbsy_url = 'http://mbsy.dev/';
+} else {
+	$mbsy_url = 'https://mbsy.co/';
+}
+
+$checkout = Mage::getSingleton('checkout/session');
+$lastId   = $checkout->getLastOrderId();
+
+if ($lastId) {
+	$order = Mage::getModel('sales/order');
+	$order->load($lastId);
+	$revenue = $order->getSubtotal()+$order->getDiscountAmount();
+	$transaction_uid = '&mbsy_transaction_uid='.$order->getRealOrderId();
+} else {
+	$revenue = 0;
+	$transaction_uid = '';
+}
+
+if (!empty($order)) {
+	$customer   = Mage::getModel('customer/customer')->load($order->getCustomerId());
+	$email      = urlencode($order->getCustomerEmail());
+	$first_name = urlencode($order->getBillingAddress()->getFirstname());
+	$last_name  = urlencode($order->getBillingAddress()->getLastname());
+} else {
+	$email   = '';
+	$first_name = '';
+	$last_name = '';
+}
+
+if (in_array($mbsy_is_approved, array('1', '0'))) {
+	$mbsy_is_approved = '&mbsy_is_approved='.$mbsy_is_approved;
+} else {
+	$mbsy_is_approved = '';
+}
+
+?>
+
+<img src="<?php echo $mbsy_url ?>embed/v2/img/?mbsy_username=<?php echo $username ?>&mbsy_campaign_uid=<?php echo $campaign ?>&mbsy_email=<?php echo $email ?>&mbsy_first_name=<?php echo $first_name ?>&mbsy_last_name=<?php echo $last_name ?>&mbsy_revenue=<?php echo $revenue ?><?php echo $auto_create ?><?php echo $transaction_uid ?><?php echo $mbsy_is_approved ?>" style="border: none; display: none" alt="" />
