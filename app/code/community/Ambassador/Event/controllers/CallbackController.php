@@ -12,7 +12,7 @@ class Ambassador_Event_CallbackController extends Mage_Core_Controller_Front_Act
 		$mode = $_POST['mode'];
 
 		if ($mode === 'dev') {
-			$ambassador_url = 'http://getambassador.dev/';
+			$ambassador_url = 'https://dev.getambassador.com/';
 		} else {
 			$ambassador_url = 'https://getambassador.com/';
 		}
@@ -308,7 +308,7 @@ class Ambassador_Event_CallbackController extends Mage_Core_Controller_Front_Act
 		$mode = Mage::getModel('core/variable')->loadByCode('getambassador_mode')->getValue('plain');
 
 		if ($mode === 'dev') {
-			$ambassador_url = 'http://getambassador.dev/';
+			$ambassador_url = 'https://dev.getambassador.com/';
 		} else {
 			$ambassador_url = 'https://getambassador.com/';
 		}

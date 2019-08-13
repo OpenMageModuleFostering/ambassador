@@ -17,6 +17,7 @@ class Ambassador_Payout_PayoutController extends Mage_Core_Controller_Front_Acti
 
 				if (!Mage::helper('enterprise_customerbalance')->isEnabled()) {
 					echo json_encode(array('type' => 'error', 'message' => 'Store Credit disabled.'));
+					exit;
 				}
 
 				$customer = Mage::getModel('customer/customer');
