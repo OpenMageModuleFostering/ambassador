@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Ambassador_Event>
+            <active>true</active>
+            <codePool>community</codePool>
+        </Ambassador_Event>
+    </modules>
+</config>

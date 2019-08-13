@@ -1,0 +1,51 @@
+<?php
+
+$username = Mage::getModel('core/variable')->loadByCode('getambassador_username')->getValue('plain');
+$campaign = Mage::getModel('core/variable')->loadByCode('getambassador_active_campaign')->getValue('plain');
+$mode = Mage::getModel('core/variable')->loadByCode('getambassador_mode')->getValue('plain');
+
+if ($mode === 'dev') {
+    $mbsy_url = 'http://mbsy.dev/';
+} else {
+    $mbsy_url = 'https://mbsy.co/';
+}
+
+$checkout = Mage::getSingleton('checkout/session');
+$lastId   = $checkout->getLastOrderId();
+
+if ($lastId) {
+    $order = Mage::getModel('sales/order');
+    $order->load($lastId);
+}
+
+if (!empty($order)) {
+    $customer   = Mage::getModel('customer/customer')->load($order->getCustomerId());
+    $email      = $order->getCustomerEmail();
+    $first_name = $order->getBillingAddress()->getFirstname();
+    $last_name  = $order->getBillingAddress()->getLastname();
+} else {
+    $email   = '';
+    $first_name = '';
+    $last_name = '';
+}
+
+?>
+
+<script type="text/javascript">
+    var mbsy_campaign_uid='<?php echo $campaign ?>'; // Required
+    var mbsy_email='<?php echo $email ?>'; // Required - replace with your new customer's email
+    // Put additional optional variables here
+    var mbsy_revenue='0'; // Required
+    var mbsy_has_trial=1; // Required
+    var mbsy_first_name='<?php echo $first_name ?>';
+    var mbsy_last_name='<?php echo $last_name ?>';
+    var addthis_config = {
+       data_track_clickback: false
+    }
+    var addthis_share = {
+      templates : {
+       twitter : "{{title}} {{url}} (via @GetAmbassador)"
+      }
+    }
+</script>
+<script type="text/javascript" src="<?php echo $mbsy_url ?>v3/ecommerce/js/<?php echo $username ?>"></script>

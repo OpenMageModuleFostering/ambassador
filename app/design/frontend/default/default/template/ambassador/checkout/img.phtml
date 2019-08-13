@@ -1,0 +1,34 @@
+<?php
+
+$username = Mage::getModel('core/variable')->loadByCode('getambassador_username')->getValue('plain');
+$campaign = Mage::getModel('core/variable')->loadByCode('getambassador_active_campaign')->getValue('plain');
+$mode = Mage::getModel('core/variable')->loadByCode('getambassador_mode')->getValue('plain');
+
+if ($mode === 'dev') {
+    $mbsy_url = 'http://mbsy.dev/';
+} else {
+    $mbsy_url = 'https://mbsy.co/';
+}
+
+$checkout = Mage::getSingleton('checkout/session');
+$lastId   = $checkout->getLastOrderId();
+
+if ($lastId) {
+    $order = Mage::getModel('sales/order');
+    $order->load($lastId);
+}
+
+if (!empty($order)) {
+    $customer   = Mage::getModel('customer/customer')->load($order->getCustomerId());
+    $email      = $order->getCustomerEmail();
+    $first_name = $order->getBillingAddress()->getFirstname();
+    $last_name  = $order->getBillingAddress()->getLastname();
+} else {
+    $email   = '';
+    $first_name = '';
+    $last_name = '';
+}
+
+?>
+
+<img src="<?php echo $mbsy_url ?>embed/v2/img/?mbsy_username=<?php echo $username ?>&mbsy_campaign_uid=<?php echo $campaign ?>&mbsy_email=<?php echo $email ?>&mbsy_first_name=<?php echo $first_name ?>&mbsy_last_name=<?php echo $last_name ?>&mbsy_revenue=0&mbsy_has_trial=1" style="border: none; display: none" alt="" />

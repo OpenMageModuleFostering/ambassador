@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config>
+	<modules>
+		<Ambassador_Payout>
+			<version>1.1.1</version>
+		</Ambassador_Payout>
+	</modules>
+	<frontend>
+		<routers>
+			<getambassador_payout>
+				<use>standard</use>
+				<args>
+					<module>Ambassador_Payout</module>
+					<frontName>getambassador_payout</frontName>
+				</args>
+			</getambassador_payout>
+		</routers>
+	</frontend>
+</config>
