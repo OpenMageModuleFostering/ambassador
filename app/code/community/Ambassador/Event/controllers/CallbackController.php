@@ -293,6 +293,62 @@ class Ambassador_Event_CallbackController extends Mage_Core_Controller_Front_Act
 				echo json_encode($e->getMessage());
 			}
 
+			// save default is_approved_when_paid
+			$variable->cleanModelCache();
+			$variable = Mage::getModel('core/variable')->loadByCode('getambassador_is_approved_when_paid');
+			$variableData = $variable->getData();
+
+			if (empty($variableData)) {
+
+				$variable->cleanModelCache();
+				$variable = Mage::getModel('core/variable');
+
+				$variable_data = array(
+					'code' => 'getambassador_is_approved_when_paid',
+					'name' => 'getambassador Approve commission when order is paid/shipped',
+					'plain_value' => '1',
+					'html_value' => ''
+					);
+
+				$variable->setData($variable_data);
+			}
+
+			try {
+				$variable->save();
+
+			} catch (Exception $e) {
+
+				echo json_encode($e->getMessage());
+			}
+
+			// save default is_denied_when_canceled
+			$variable->cleanModelCache();
+			$variable = Mage::getModel('core/variable')->loadByCode('getambassador_is_denied_when_canceled');
+			$variableData = $variable->getData();
+
+			if (empty($variableData)) {
+
+				$variable->cleanModelCache();
+				$variable = Mage::getModel('core/variable');
+
+				$variable_data = array(
+					'code' => 'getambassador_is_denied_when_canceled',
+					'name' => 'getambassador Deny commission when order is canceled',
+					'plain_value' => '1',
+					'html_value' => ''
+					);
+
+				$variable->setData($variable_data);
+			}
+
+			try {
+				$variable->save();
+
+			} catch (Exception $e) {
+
+				echo json_encode($e->getMessage());
+			}
+
 			echo json_encode(true);
 
 		} else {

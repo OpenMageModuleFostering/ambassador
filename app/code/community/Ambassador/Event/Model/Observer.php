@@ -30,6 +30,18 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 	 */
 	public function callCommissionUpdate($observer)
 	{
+		$is_approved_when_paid = Mage::getModel('core/variable')->loadByCode('getambassador_is_approved_when_paid')->getValue('plain');
+
+		if (is_null($is_approved_when_paid)) {
+			$is_approved_when_paid = $this->addMissingCustomVariable('getambassador_is_approved_when_paid');
+		}
+
+		$is_denied_when_canceled = Mage::getModel('core/variable')->loadByCode('getambassador_is_denied_when_canceled')->getValue('plain');
+
+		if (is_null($is_denied_when_canceled)) {
+			$is_denied_when_canceled = $this->addMissingCustomVariable('getambassador_is_denied_when_canceled');
+		}
+
 		$snippet_type = Mage::getModel('core/variable')->loadByCode('getambassador_snippet_type')->getValue('plain');
 		$username = Mage::getModel('core/variable')->loadByCode('getambassador_username')->getValue('plain');
 		$api_key = Mage::getModel('core/variable')->loadByCode('getambassador_api_key')->getValue('plain');
@@ -55,29 +67,33 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 				break;
 		}
 
-		$transaction_uid = $order->getRealOrderId();
+		if (($is_approved == 1 && $is_approved_when_paid == '1') || ($is_approved == 2 && $is_denied_when_canceled == '1')) {
 
-		$api_url = $this->ambassador_url."api/v2/$username/$api_key/json/commission/update";
+			$transaction_uid = $order->getRealOrderId();
 
-		// Data for API call
-		$data = array(
-			'transaction_uid' => $transaction_uid,
-			'is_approved' => $is_approved
-		);
+			$api_url = $this->ambassador_url."api/v2/$username/$api_key/json/commission/update";
 
-		$data = http_build_query($data);
+			// Data for API call
+			$data = array(
+				'transaction_uid' => $transaction_uid,
+				'is_approved' => $is_approved
+			);
 
-		// Call to API via CURL
-		$curl_handle = curl_init();
-		curl_setopt($curl_handle, CURLOPT_URL, $api_url);
-		curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 10);
-		curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($curl_handle, CURLOPT_POST, 1);
-		curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $data);
-		$buffer = curl_exec($curl_handle);
-		curl_close($curl_handle);
-		// Output
-		$returnData = json_decode($buffer, true);
+			$data = http_build_query($data);
+
+			// Call to API via CURL
+			$curl_handle = curl_init();
+			curl_setopt($curl_handle, CURLOPT_URL, $api_url);
+			curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 10);
+			curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($curl_handle, CURLOPT_POST, 1);
+			curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $data);
+			$buffer = curl_exec($curl_handle);
+			curl_close($curl_handle);
+			// Output
+			$returnData = json_decode($buffer, true);
+
+		}
 
 		return $this;
 	}
@@ -221,6 +237,60 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 						'code' => 'getambassador_is_approved',
 						'name' => 'getambassador Approve commission while placing order',
 						'plain_value' => '0',
+						'html_value' => ''
+						);
+
+					$variable->setData($variable_data);
+				}
+
+				try {
+					$variable->save();
+				} catch (Exception $e) {}
+
+				return $variable_data['plain_value'];
+				break;
+
+			case 'getambassador_is_approved_when_paid':
+
+				$variable = Mage::getModel('core/variable')->loadByCode('getambassador_is_approved_when_paid');
+				$variableData = $variable->getData();
+
+				if (empty($variableData)) {
+
+					$variable->cleanModelCache();
+					$variable = Mage::getModel('core/variable');
+
+					$variable_data = array(
+						'code' => 'getambassador_is_approved_when_paid',
+						'name' => 'getambassador Approve commission when order is paid/shipped',
+						'plain_value' => '1',
+						'html_value' => ''
+						);
+
+					$variable->setData($variable_data);
+				}
+
+				try {
+					$variable->save();
+				} catch (Exception $e) {}
+
+				return $variable_data['plain_value'];
+				break;
+
+			case 'getambassador_is_denied_when_canceled':
+
+				$variable = Mage::getModel('core/variable')->loadByCode('getambassador_is_denied_when_canceled');
+				$variableData = $variable->getData();
+
+				if (empty($variableData)) {
+
+					$variable->cleanModelCache();
+					$variable = Mage::getModel('core/variable');
+
+					$variable_data = array(
+						'code' => 'getambassador_is_denied_when_canceled',
+						'name' => 'getambassador Deny commission when order is canceled',
+						'plain_value' => '1',
 						'html_value' => ''
 						);
 
