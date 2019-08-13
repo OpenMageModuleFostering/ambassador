@@ -44,7 +44,7 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 
 		$order = $observer->getEvent()->getInvoice()->getOrder();
 
-		$revenue = $order->getSubtotal();
+		$revenue = $order->getSubtotal()+$order->getDiscountAmount();
 		$email = $order->getCustomerEmail();
 		$first_name = $order->getCustomerFirstname();
 		$last_name = $order->getCustomerLastname();
@@ -125,63 +125,6 @@ class Ambassador_Event_Model_Observer extends Varien_Event_Observer
 		);
 
 		Mage::app()->getLayout()->getBlock('content')->append($block);
-
-		return $this;
-	}
-
-	/**
-	 * SSO
-	 *
-	 * @param   Varien_Event_Observer $observer
-	 * @return  Ambassador_Event
-	 */
-	public function sso($observer)
-	{
-		if (!Mage::app()->getRequest()->getParam('getambassador_affiliate_program')) {
-
-			$username = Mage::getModel('core/variable')->loadByCode('getambassador_username')->getValue('plain');
-			$api_key = Mage::getModel('core/variable')->loadByCode('getambassador_api_key')->getValue('plain');
-			$response_type = 'json';
-			$mbsy_token = '';
-			$mbsy_email = Mage::getSingleton('customer/session')->getCustomer()->getEmail(); // Set this to the value of your user's email
-			$mbsy_signature = sha1($api_key.$mbsy_email);
-
-			// Build and make company/token API call
-			$url = $this->ambassador_url.'api/v2/'.$username.'/'.$api_key.'/'.$response_type.'/company/token';
-			$curl_handle = curl_init();
-			curl_setopt($curl_handle, CURLOPT_URL, $url);
-			curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 10);
-			curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
-			curl_setopt($curl_handle, CURLOPT_FOLLOWLOCATION, TRUE);
-			curl_setopt($curl_handle, CURLOPT_POST, FALSE);
-			curl_setopt($curl_handle, CURLOPT_FAILONERROR, FALSE);
-			curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, FALSE);
-			curl_setopt($curl_handle, CURLOPT_SSL_VERIFYHOST, FALSE);
-			$response = curl_exec($curl_handle);
-			curl_close($curl_handle);
-
-			// Decode json response to array, you'll need to change this if using XML
-			$response = json_decode($response, TRUE);
-
-			// Grab token from response
-			$mbsy_token = $response['response']['data']['token'];
-
-			$block = Mage::app()->getLayout()->createBlock(
-				'Mage_Core_Block_Template',
-				'ambassador_sso',
-				array('template' => "ambassador/sso/sso.phtml")
-			);
-
-			$block->assign('mbsy_token', $mbsy_token);
-			$block->assign('mbsy_first_name', Mage::getSingleton('customer/session')->getCustomer()->getFirstname());
-			$block->assign('mbsy_last_name', Mage::getSingleton('customer/session')->getCustomer()->getLastname());
-			$block->assign('mbsy_email', $mbsy_email);
-			$block->assign('mbsy_signature', $mbsy_signature);
-			$block->assign('portal_url', Mage::getModel('core/variable')->loadByCode('getambassador_portal_url')->getValue('plain'));
-
-			Mage::app()->getLayout()->getBlock('content')->append($block);
-
-		}
 
 		return $this;
 	}

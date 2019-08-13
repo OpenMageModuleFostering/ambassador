@@ -234,6 +234,34 @@ class Ambassador_Event_CallbackController extends Mage_Core_Controller_Front_Act
 				echo json_encode($e->getMessage());
 			}
 
+			// save default auto_create
+			$variable->cleanModelCache();
+			$variable = Mage::getModel('core/variable')->loadByCode('getambassador_auto_create_ambassador');
+			$variableData = $variable->getData();
+
+			if (empty($variableData)) {
+
+				$variable->cleanModelCache();
+				$variable = Mage::getModel('core/variable');
+
+				$variable_data = array(
+					'code' => 'getambassador_auto_create_ambassador',
+					'name' => 'getambassador Automatically Create Ambassador',
+					'plain_value' => '0',
+					'html_value' => ''
+					);
+
+				$variable->setData($variable_data);
+			}
+
+			try {
+				$variable->save();
+
+			} catch (Exception $e) {
+
+				echo json_encode($e->getMessage());
+			}
+
 			echo json_encode(true);
 
 		} else {
