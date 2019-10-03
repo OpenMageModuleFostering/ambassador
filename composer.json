@@ -1,16 +1,5 @@
 {
-    "name": "OpenMageModuleFostering/Ambassador",
-    "type": "magento-module",
-    "license": "Zferral,-Inc,-magento@getAmbassador.com",
-    "homepage": "",
-    "description": "Ambassador is a social marketing tool for ecommerce.  Easily track & manage customer referrals while leveraging your "brand ambassadors" to promote your products; driving more sales and increasing revenue.",
-    "authors": [
-    {
-        "name": "Jeffrey Epstein",
-        "email": "magento@getambassador.com"
-    }
-],
-    "suggest": {
-        "magento-hackathon/magento-composer-installer": "*"
-    }
+    "keywords": [
+        "openmage-module"
+    ]
 }
